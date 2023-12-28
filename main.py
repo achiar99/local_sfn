@@ -9,6 +9,19 @@ profile = 'dev8'
 region='us-west-2'
 
 
+class bcolors:
+    HEADER = '\033[95m'
+    OKBLUE = '\033[94m'
+    OKCYAN = '\033[96m'
+    OKGREEN = '\033[92m'
+    WARNING = '\033[93m'
+    FAIL = '\033[91m'
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
+
+
+
 class State:
     def __init__(self, name, type) -> None:
         self.name = name
@@ -135,7 +148,12 @@ def run_sfn(definition, data):
     current_data = data
     current_state = states[start_at]
     while True:
-        print(current_state.name)
+        if current_state.type == 'Succeed':
+            print(bcolors.OKGREEN + current_state.name + bcolors.OKBLUE)
+        elif current_state.type == 'Fail':
+            print(bcolors.FAIL + current_state.name + bcolors.OKBLUE)
+        else:
+            print(current_state.name)
         if current_state.type == 'Task':
             if current_state.debug:
                 debug_func(current_data)
