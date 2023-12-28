@@ -1,0 +1,84 @@
+{
+    "Comment": "A description of my state machine",
+    "StartAt": "Lambda Invoke",
+    "States": {
+        "Lambda Invoke": {
+            "Type": "Task",
+            "Resource": "arn:aws:lambda:us-west-2:884056075937:function:bc-infrastructure-feature-flags-rose",
+            "ResultPath": "$.ffOutput",
+            "Parameters": {
+                "body": {
+                    "customerName.$": "$.customerName",
+                    "featureFlagName": "enable_sast"
+                },
+                "headers": {
+                    "Content-Type": "application/json",
+                    "throw-error": true
+                },
+                "path": "/invoke/feature-flags/getFeatureFlag"
+            },
+            "Next": "Choice"
+        },
+        "Choice": {
+            "Type": "Choice",
+            "Choices": [
+                {
+                    "Variable": "$.ffOutput.enable_sast",
+                    "BooleanEquals": true,
+                    "Next": "Pass"
+                }
+            ],
+            "Default": "Success"
+        },
+        "Success": {
+            "Type": "Succeed",
+            "End": true
+        },
+        "Pass": {
+            "Type": "Pass",
+            "Result": {
+                "CoolList": [1, 2, 3, 4]
+            },
+            "ResultPath": "$.ListOut",
+            "Next": "Map"
+        },
+        "Map": {
+            "Type": "Map",
+            "ItemsPath": "$.ListOut.CoolList",
+            "ItemSelector": {
+                "debugData.$": "$$.Map.Item.Value"
+            },
+            "ItemProcessor": {
+                "ProcessorConfig": {
+                    "Mode": "INLINE"
+                },
+                "StartAt": "Map Task",
+                "States": {
+                    "Map Task": {
+                        "Type": "Task",
+                        "Debug": true,
+                        "Resource": "",
+                        "OutputPath": "$.Payload",
+                        "Parameters": {
+                            "Payload.$": "$"
+                        },
+                        "End": true
+                    }
+                }
+            },
+            "Catch": [
+                {
+                    "ErrorEquals": [
+                        "States.ALL"
+                    ],
+                    "Next": "Fail"
+                }
+            ],
+            "Next": "Success"
+        },
+        "Fail": {
+            "Type": "Fail",
+            "End": true
+        }
+    }
+}
