@@ -4,7 +4,7 @@
     "States": {
         "Lambda Invoke": {
             "Type": "Task",
-            "Resource": "arn:aws:lambda:us-west-2:884056075937:function:bc-infrastructure-feature-flags-rose",
+            "Resource": "FeatureFlag",
             "ResultPath": "$.ffOutput",
             "Parameters": {
                 "body": {
@@ -57,7 +57,7 @@
                     "Map Task": {
                         "Type": "Task",
                         "Debug": true,
-                        "Resource": "",
+                        "Resource": "MyCode",
                         "OutputPath": "$.Payload",
                         "Parameters": {
                             "Payload.$": "$"
