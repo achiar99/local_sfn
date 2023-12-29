@@ -1,9 +1,9 @@
 
 from copy import copy
+import importlib
 import json
 import boto3
-from my_code import debug_func as debug_func
-
+from resources_map import resources_map
 
 profile = 'dev8'
 region='us-west-2'
@@ -156,17 +156,23 @@ def run_sfn(definition, data):
             print(current_state.name)
         if current_state.type == 'Task':
             if current_state.debug:
-                debug_func(current_data)
+                module_path_splits = resources_map[current_state.resource].split('.')
+                func_name = module_path_splits[-1]
+                module_path = '.'.join(module_path_splits[0:-1])
+                imported_module = importlib.import_module(module_path)
+                handler = getattr(imported_module, func_name)
+                return handler(current_data)
             else:
+                resource = resources_map[current_state.resource]
                 session = boto3.Session(profile_name=profile, region_name=region)
                 lambda_client = session.client('lambda')
-                lambda_name = current_state.resource.split(':function:')[1]
+                lambda_name = resource.split(':function:')[1]
                 payload = fix_param(current_state.parameters, current_data)
                 lambda_response = lambda_client.invoke(FunctionName=lambda_name, Payload=json.dumps(payload))
                 result = json.loads(lambda_response['Payload'].read())
             if current_state.result_path:
                 current_data[current_state.result_path[2:]] = result
-                
+
         if current_state.type == 'Pass':
             if current_state.result_path and current_state.result:
                 current_data[current_state.result_path[2:]] = current_state.result
