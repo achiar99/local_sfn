@@ -3,10 +3,8 @@ from copy import copy
 import importlib
 import json
 import boto3
-from resources_map import resources_map
-
-profile = 'dev8'
-region='us-west-2'
+import datetime
+from config import profile, region, event, sfn, resources, mocks
 
 
 class bcolors:
@@ -29,6 +27,7 @@ class State:
         self.next = ''
         self.end = False
         self.debug = False
+        self.mock = False
 
 
 class Task(State):
@@ -81,6 +80,7 @@ def parse_states(definition):
             states[name].next = state.get('Next', '')
             states[name].end = state.get('End', False)
             states[name].debug = state.get('Debug', False)
+            states[name].mock = state.get('Mock', False)
         if state_type == 'Choice':
             states[name] = Choice(name=name, type=state_type, choices=state.get('Choices'), default=state.get('Default'))
         if state_type == 'Pass':
@@ -147,23 +147,34 @@ def run_sfn(definition, data):
 
     current_data = data
     current_state = states[start_at]
+    
+    start_time = datetime.datetime.now()
+    start = True
     while True:
+        if not start:
+            now = datetime.datetime.now()
+            print(bcolors.OKCYAN + str((now-start_time).total_seconds()) + ' seconds'+ bcolors.OKCYAN)
+            start_time = now
+        start = False
+        print(bcolors.OKBLUE + '-----------------------' + bcolors.OKBLUE)
         if current_state.type == 'Succeed':
             print(bcolors.OKGREEN + current_state.name + bcolors.OKBLUE)
         elif current_state.type == 'Fail':
             print(bcolors.FAIL + current_state.name + bcolors.OKBLUE)
         else:
-            print(current_state.name)
+            print(bcolors.OKBLUE + current_state.name + bcolors.OKBLUE)
         if current_state.type == 'Task':
             if current_state.debug:
-                module_path_splits = resources_map[current_state.resource].split('.')
+                module_path_splits = resources[current_state.resource].split('.')
                 func_name = module_path_splits[-1]
                 module_path = '.'.join(module_path_splits[0:-1])
                 imported_module = importlib.import_module(module_path)
                 handler = getattr(imported_module, func_name)
-                return handler(current_data)
+                result = handler(current_data)
+            elif current_state.mock:
+                current_data = mocks[current_state.resource]
             else:
-                resource = resources_map[current_state.resource]
+                resource = resources[current_state.resource]
                 session = boto3.Session(profile_name=profile, region_name=region)
                 lambda_client = session.client('lambda')
                 lambda_name = resource.split(':function:')[1]
@@ -222,7 +233,8 @@ def run_sfn(definition, data):
 
 
 if __name__ == "__main__":
-    with open('sfnDefinition.json') as f:
+    with open(sfn) as f:
         d = json.load(f)
 
-    run_sfn(d, {'customerName': 'arosenfeld85'})
+    output = run_sfn(d, event)
+    print(bcolors.ENDC + "output: " + str(output) +  bcolors.ENDC)
