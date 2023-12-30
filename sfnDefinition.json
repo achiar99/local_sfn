@@ -74,7 +74,13 @@
                     "Next": "Fail"
                 }
             ],
-            "Next": "Success"
+            "Next": "Mock Step"
+        },
+        "Mock Step": {
+            "Type": "Task",
+            "Next": "Success",
+            "Mock": true,
+            "Resource": "MockOutput"
         },
         "Fail": {
             "Type": "Fail",
