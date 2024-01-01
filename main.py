@@ -148,8 +148,11 @@ def run_sfn(definition, data):
 
 
 if __name__ == "__main__":
+    print('\n\n')
+    print(bcolors.WARNING + "Input: " + str(event) +  bcolors.WARNING)
     with open(sfn) as f:
         d = json.load(f)
 
     output = run_sfn(d, event)
-    print(bcolors.ENDC + "output: " + str(output) +  bcolors.ENDC)
+    print(bcolors.WARNING + "Output: " + str(output) +  bcolors.WARNING)
+    print('\n\n')

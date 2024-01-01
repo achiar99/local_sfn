@@ -1,8 +1,8 @@
 {
     "Comment": "A description of my state machine",
-    "StartAt": "Lambda Invoke",
+    "StartAt": "Invoke Feature Flag",
     "States": {
-        "Lambda Invoke": {
+        "Invoke Feature Flag": {
             "Type": "Task",
             "Resource": "FeatureFlag",
             "ResultPath": "$.ffOutput",
@@ -17,32 +17,28 @@
                 },
                 "path": "/invoke/feature-flags/getFeatureFlag"
             },
-            "Next": "Choice"
+            "Next": "Should Run Map"
         },
-        "Choice": {
+        "Should Run Map": {
             "Type": "Choice",
             "Choices": [
                 {
                     "Variable": "$.ffOutput.enable_sast",
                     "BooleanEquals": true,
-                    "Next": "Pass"
+                    "Next": "Prepare Data"
                 }
             ],
             "Default": "Success"
         },
-        "Success": {
-            "Type": "Succeed",
-            "End": true
-        },
-        "Pass": {
+        "Prepare Data": {
             "Type": "Pass",
             "Result": {
                 "CoolList": [1, 2, 3, 4]
             },
             "ResultPath": "$.ListOut",
-            "Next": "Map"
+            "Next": "Print Iterator"
         },
-        "Map": {
+        "Print Iterator": {
             "Type": "Map",
             "ItemsPath": "$.ListOut.CoolList",
             "ItemSelector": {
@@ -52,9 +48,9 @@
                 "ProcessorConfig": {
                     "Mode": "INLINE"
                 },
-                "StartAt": "Map Task",
+                "StartAt": "Debug Task",
                 "States": {
-                    "Map Task": {
+                    "Debug Task": {
                         "Type": "Task",
                         "Debug": true,
                         "Resource": "MyCode",
@@ -84,6 +80,10 @@
         },
         "Fail": {
             "Type": "Fail",
+            "End": true
+        },
+        "Success": {
+            "Type": "Succeed",
             "End": true
         }
     }
